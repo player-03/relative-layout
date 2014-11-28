@@ -1,5 +1,6 @@
 package com.player03.relativelayout.area;
 
+import com.player03.relativelayout.instruction.LayoutInstruction;
 import flash.events.Event;
 import flash.events.EventDispatcher;
 import flash.display.DisplayObject;
@@ -8,9 +9,7 @@ import flash.display.DisplayObject;
  * An area whose boundaries are defined by already-placed objects.
  * @author Joseph Cloutier
  */
-class BoundedArea extends Area {
-	private var parentArea:Area;
-	
+class BoundedArea extends Area implements LayoutInstruction {
 	/**
 	 * The object on this area's left.
 	 */
@@ -38,16 +37,20 @@ class BoundedArea extends Area {
 					?topEdge:DisplayObject, ?bottomEdge:DisplayObject) {
 		super(parentArea.x, parentArea.y, parentArea.width, parentArea.height);
 		
-		this.parentArea = parentArea;
 		this.leftEdge = leftEdge;
 		this.rightEdge = rightEdge;
 		this.topEdge = topEdge;
 		this.bottomEdge = bottomEdge;
 		
-		refresh();
+		refresh(parentArea);
 	}
 	
-	public function refresh():Void {
+	//This isn't elegant code, but at least it works.
+	public function apply(target:DisplayObject, area:IRectangle, scale:Scale):Void {
+		refresh(area);
+	}
+	
+	public function refresh(parentArea:IRectangle):Void {
 		var x:Float = parentArea.x;
 		if(leftEdge != null) {
 			x = Math.max(x, leftEdge.x + leftEdge.width);

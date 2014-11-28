@@ -2,10 +2,11 @@ package com.player03.relativelayout;
 
 import com.player03.relativelayout.area.Area;
 import com.player03.relativelayout.area.BoundedArea;
+import com.player03.relativelayout.area.IRectangle;
 import com.player03.relativelayout.area.StageArea;
-import com.player03.relativelayout.position.Direction;
-import com.player03.relativelayout.position.Align;
-import com.player03.relativelayout.position.Size;
+import com.player03.relativelayout.instruction.Align;
+import com.player03.relativelayout.instruction.LayoutInstruction;
+import com.player03.relativelayout.instruction.Size;
 import flash.display.DisplayObject;
 import flash.events.Event;
 import flash.Vector;
@@ -14,11 +15,14 @@ import flash.Vector;
  * @author Joseph Cloutier
  */
 class Layout {
+	public var scale(default, null):Scale;
 	public var area(default, null):Area;
 	
-	private var commands:Vector<Void -> Void>;
+	private var instructions:Vector<BoundLayoutInstruction>;
 	
-	public function new(?area:Area) {
+	public function new(scale:Scale, ?area:Area) {
+		this.scale = scale;
+		
 		if(area == null) {
 			this.area = StageArea.instance;
 		} else {
@@ -27,7 +31,7 @@ class Layout {
 		
 		this.area.addEventListener(Event.CHANGE, onAreaChanged);
 		
-		commands = new Vector<Void -> Void>();
+		instructions = new Vector<BoundLayoutInstruction>();
 	}
 	
 	private function onAreaChanged(e:Event):Void {
@@ -42,14 +46,14 @@ class Layout {
 	 * moment you should be sure to register everything in order.
 	 */
 	public function apply():Void {
-		for(command in commands) {
-			command();
+		for(instruction in instructions) {
+			instruction.instruction.apply(instruction.target, instruction.area, scale);
 		}
 	}
 	
 	public function dispose():Void {
 		area.removeEventListener(Event.CHANGE, onAreaChanged);
-		commands = null;
+		instructions = null;
 	}
 	
 	//Begin partition function(s).
@@ -62,15 +66,18 @@ class Layout {
 					?topEdge:DisplayObject, ?bottomEdge:DisplayObject):Layout {
 		var subArea:BoundedArea = new BoundedArea(area,
 							leftEdge, rightEdge, topEdge, bottomEdge);
-		commands.push(subArea.refresh);
+		//A BoundedArea serves as its own LayoutInstruction.
+		add(null, subArea);
 		
-		return new Layout(subArea);
+		return new Layout(scale, subArea);
 	}
 	
 	//Begin layout functions.
 	
 	/**
-	 * Places an object left of, right of, above, or below a "base" object.
+	 * Places an object left of, right of, above, or below a "base"
+	 * object. Adjusts both axes. If you only want to adjust one, use
+	 * Align.adjacent().
 	 * @param	target The object to place.
 	 * @param	base The target will be placed relative to this object.
 	 * @param	direction The target will be placed in this direction
@@ -81,51 +88,52 @@ class Layout {
 	 * LEFT, that controls the x coordinate, so this will set the
 	 * target's y coordinate.
 	 * 
-	 * If alignment is null, CENTER will be used instead.
+	 * If alignment is null, the target will be centered.
 	 */
 	public function adjacent(target:DisplayObject,
 							base:DisplayObject, direction:Direction,
-							margin:Float = 0, ?alignment:Null<Align>):Void {
-		commands.push(LayoutCommands.adjacent.bind(target, base, direction, margin, alignment));
+							margin:Float = 0, ?alignment:Align):Void {
+		add(target, Align.adjacent(margin, direction), base);
+		
+		if(alignment == null) {
+			alignment = Align.center(direction == UP || direction == DOWN);
+		}
+		add(target, alignment, base);
 	}
 	
 	/**
-	 * Aligns the target's x and/or y coordinate with the base object.
-	 * @param	target The object to place.
-	 * @param	base The object to align with. If this is null, the target
-	 * will be aligned within this layout's full area instead.
-	 * @param	horizontal The horizontal alignment. See the Align enum
-	 * for details. If this is null, the target's x coordinate will be
-	 * unchanged.
-	 * @param	vertical The vertical alignment. See the Align enum for
-	 * details. If this is null, the target's y coordinate will be
-	 * unchanged.
+	 * Adds a layout instruction, to be run when the stage is resized and
+	 * when apply() is called. If no "base" object is specified, the
+	 * entire layout area will be used as the base.
 	 */
-	public function align(target:DisplayObject, ?base:DisplayObject,
-									?horizontal:Null<Align>,
-									?vertical:Null<Align>):Void {
-		commands.push(LayoutCommands.align.bind(target,
-					base != null ? base : area,
-					horizontal, vertical));
+	public inline function add(target:DisplayObject,
+						instruction:LayoutInstruction,
+						?base:DisplayObject):Void {
+		instructions.push(new BoundLayoutInstruction(target,
+						base != null ? base : area,
+						instruction));
 	}
 	
-	/**
-	 * Sets the target's size.  Make sure you call this BEFORE adjusting
-	 * the target's position. If you call it afterwards, it may mess up
-	 * the alignment.
-	 * @param	target The object to resize.
-	 * @param	base The object to base the target's size on. If this is
-	 * null, this layout's full area will be used instead.
-	 * @param	horizontal Controls the target's width. See the Size enum
-	 * for details. If this is null, the target's width will be unchanged.
-	 * @param	vertical Controls the target's height. See the Size enum
-	 * for details. If this is null, the target's height will be unchanged.
-	 */
-	public function size(target:DisplayObject, ?base:DisplayObject,
-									?horizontal:Null<Size>,
-									?vertical:Null<Size>):Void {
-		commands.push(LayoutCommands.size.bind(target,
-					base != null ? base : area,
-					horizontal, vertical));
+	public inline function addMultiple(target:DisplayObject,
+						instructions:Array<LayoutInstruction>,
+						?base:DisplayObject) {
+		for(instruction in instructions) {
+			add(target, instruction, base);
+		}
+	}
+}
+
+/**
+ * It's like bind(), except for a class.
+ */
+class BoundLayoutInstruction {
+	public var target:DisplayObject;
+	public var area:IRectangle;
+	public var instruction:LayoutInstruction;
+	
+	public function new(target:DisplayObject, area:IRectangle, instruction:LayoutInstruction) {
+		this.target = target;
+		this.area = area;
+		this.instruction = instruction;
 	}
 }
