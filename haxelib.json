@@ -1,0 +1,11 @@
+{
+	"name": "relative-layout",
+	"url": "http://www.github.com/player-03/relative-layout",
+	"license": "MIT",
+	"tags": [],
+	"description": "A layout system allowing you to specify relative locations and sizes of display objects.",
+	"version": "0.1",
+	"releasenote": "",
+	"contributors": [ "player_03" ],
+	"dependencies": {}
+}
