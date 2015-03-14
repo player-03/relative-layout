@@ -4,7 +4,7 @@
 	"license": "MIT",
 	"tags": [],
 	"description": "A layout system allowing you to specify relative locations and sizes of display objects.",
-	"version": "0.1",
+	"version": "0.2",
 	"releasenote": "",
 	"contributors": [ "player_03" ],
 	"dependencies": {}
