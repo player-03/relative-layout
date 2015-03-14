@@ -2,6 +2,7 @@ package com.player03.relativelayout.instruction;
 
 import com.player03.relativelayout.area.IRectangle;
 import com.player03.relativelayout.Direction;
+import com.player03.relativelayout.instruction.LayoutInstruction.InstructionMask;
 import com.player03.relativelayout.Scale;
 import openfl.display.DisplayObject;
 
@@ -27,8 +28,14 @@ class Align implements LayoutInstruction {
 		}
 	}
 	
-	public static function center(horizontal:Bool):Align {
+	public static inline function center(horizontal:Bool):Align {
 		return new PercentAlign(horizontal, 0.5);
+	}
+	public static inline function centerX():Align {
+		return new PercentAlign(true, 0.5);
+	}
+	public static inline function centerY():Align {
+		return new PercentAlign(false, 0.5);
 	}
 	
 	public static inline function horizontalPercent(percent:Float):Align {
@@ -55,8 +62,11 @@ class Align implements LayoutInstruction {
 	}
 	
 	private var horizontal:Bool;
+	public var mask:Int;
+	
 	public function new(horizontal:Bool) {
 		this.horizontal = horizontal;
+		mask = horizontal ? InstructionMask.AFFECTS_X : InstructionMask.AFFECTS_Y;
 	}
 	
 	public function apply(target:DisplayObject, area:IRectangle, scale:Scale):Void {

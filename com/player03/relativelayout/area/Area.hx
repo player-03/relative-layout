@@ -7,7 +7,7 @@ import flash.events.EventDispatcher;
  * A rectangular region, to place objects within. Note: area boundaries
  * will not always be strictly enforced.
  * 
- * When the area changes for any reaosn, it will dispatch a CHANGE event.
+ * When the area changes for any reason, it will dispatch a CHANGE event.
  * @author Joseph Cloutier
  */
 class Area extends EventDispatcher {

@@ -1,5 +1,7 @@
 package com.player03.relativelayout;
 
+import com.player03.relativelayout.area.Area;
+import com.player03.relativelayout.area.StageArea;
 import com.player03.relativelayout.Direction;
 import openfl.events.Event;
 import openfl.Lib;
@@ -46,10 +48,15 @@ class Scale {
 	/**
 	 * @param	baseStageWidth The stage width you're using for testing.
 	 * @param	baseStageHeight The stage height you're using for testing.
+	 * @param	area If you want to use something besides the stage
+	 * boundaries to calculate scale, specify it here. In most cases this
+	 * won't be necessary.
 	 */
-	public function new(baseStageWidth:Int = 800, baseStageHeight:Int = 600) {
+	public function new(baseStageWidth:Int = 800, baseStageHeight:Int = 600,
+						?area:Area) {
 		this.baseStageWidth = baseStageWidth;
 		this.baseStageHeight = baseStageHeight;
+		this.area = area != null ? area : StageArea.instance;
 		
 		aspectRatio();
 	}
@@ -60,10 +67,10 @@ class Scale {
 	 */
 	public var behavior(null, set):ScaleBehavior;
 	private function set_behavior(value:ScaleBehavior):ScaleBehavior {
-		if(value != null && behavior == null) {
-			Lib.current.stage.addEventListener(Event.RESIZE, onResize);
+		if(behavior == null && value != null) {
+			area.addEventListener(Event.CHANGE, onResize);
 		} else if(behavior != null && value == null) {
-			Lib.current.stage.removeEventListener(Event.RESIZE, onResize);
+			area.removeEventListener(Event.CHANGE, onResize);
 		}
 		
 		behavior = value;
@@ -73,9 +80,7 @@ class Scale {
 		return behavior;
 	}
 	private function onResize(e:Event):Void {
-		behavior.onResize(Lib.current.stage.stageWidth,
-						Lib.current.stage.stageHeight,
-						this);
+		behavior.onResize(Std.int(area.width), Std.int(area.height), this);
 	}
 	
 	//Convenience functions for some of the the available behaviors.
@@ -92,6 +97,24 @@ class Scale {
 	}
 	public inline function aspectRatioWithCropping():Void {
 		behavior = new NoBorderScale();
+	}
+	
+	/**
+	 * Most users can safely ignore this.
+	 */
+	public var area(default, set):Area;
+	private function set_area(value:Area):Area {
+		if(value == null) {
+			area = StageArea.instance;
+		} else {
+			area = value;
+		}
+		
+		if(behavior != null) {
+			onResize(null);
+		}
+		
+		return area;
 	}
 }
 

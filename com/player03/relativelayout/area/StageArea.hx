@@ -22,9 +22,10 @@ class StageArea extends Area {
 	private function new() {
 		var stage:Stage = Lib.current.stage;
 		
-		super(0, 0, stage.stageWidth, stage.stageHeight);
+		super();
 		
-		stage.addEventListener(Event.RESIZE, onStageResize);
+		stage.addEventListener(Event.RESIZE, onStageResize, false, 1);
+		onStageResize(null);
 	}
 	
 	private function onStageResize(e:Event):Void {

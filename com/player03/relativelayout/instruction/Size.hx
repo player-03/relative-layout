@@ -1,5 +1,6 @@
 package com.player03.relativelayout.instruction;
 import com.player03.relativelayout.area.IRectangle;
+import com.player03.relativelayout.instruction.LayoutInstruction.InstructionMask;
 import openfl.display.DisplayObject;
 
 /**
@@ -8,6 +9,20 @@ import openfl.display.DisplayObject;
  * strongly recommended that you apply sizes before alignments.
  */
 class Size implements LayoutInstruction {
+	/**
+	 * Set the target's width ignoring everything except the overall Scale.
+	 */
+	public static inline function absoluteWidth(width:Float):Size {
+		return new BasicSize(true, width);
+	}
+	
+	/**
+	 * Set the target's height ignoring everything except the overall Scale.
+	 */
+	public static inline function absoluteHeight(height:Float):Size {
+		return new BasicSize(false, height);
+	}
+	
 	/**
 	 * Scale the target relative to the base's width. For instance,
 	 * relativeWidth(0.95) plus Align.HORIZONTAL_CENTER will leave a
@@ -53,8 +68,11 @@ class Size implements LayoutInstruction {
 	}
 	
 	private var horizontal:Bool;
+	public var mask:Int;
+	
 	public function new(horizontal:Bool) {
 		this.horizontal = horizontal;
+		mask = horizontal ? InstructionMask.AFFECTS_WIDTH : InstructionMask.AFFECTS_HEIGHT;
 	}
 	
 	public function apply(target:DisplayObject, area:IRectangle, scale:Scale):Void {
@@ -67,6 +85,19 @@ class Size implements LayoutInstruction {
 	
 	private function getSize(targetSize:Float, areaSize:Float, scale:Float):Float {
 		return targetSize * scale;
+	}
+}
+
+class BasicSize extends Size {
+	private var size:Float;
+	
+	public function new(horizontal:Bool, size:Float) {
+		super(horizontal);
+		this.size = size;
+	}
+	
+	private override function getSize(targetSize:Float, areaSize:Float, scale:Float):Float {
+		return size * scale;
 	}
 }
 

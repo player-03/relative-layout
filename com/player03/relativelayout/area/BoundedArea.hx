@@ -27,6 +27,8 @@ class BoundedArea extends Area implements LayoutInstruction {
 	 */
 	public var bottomEdge:DisplayObject;
 	
+	public var mask:Int;
+	
 	/**
 	 * @param	parentArea The boundaries to use by default if an object
 	 * is not specified for that side. The bounded area will not extend
@@ -41,6 +43,9 @@ class BoundedArea extends Area implements LayoutInstruction {
 		this.rightEdge = rightEdge;
 		this.topEdge = topEdge;
 		this.bottomEdge = bottomEdge;
+		
+		mask = InstructionMask.AFFECTS_X | InstructionMask.AFFECTS_Y
+			| InstructionMask.AFFECTS_WIDTH | InstructionMask.AFFECTS_HEIGHT;
 		
 		refresh(parentArea);
 	}

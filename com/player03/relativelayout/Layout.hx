@@ -7,6 +7,7 @@ import com.player03.relativelayout.area.StageArea;
 import com.player03.relativelayout.instruction.Align;
 import com.player03.relativelayout.instruction.LayoutInstruction;
 import com.player03.relativelayout.instruction.Size;
+import com.player03.relativelayout.Layout.BoundLayoutInstruction;
 import flash.display.DisplayObject;
 import flash.events.Event;
 import flash.Vector;
@@ -15,35 +16,56 @@ import flash.Vector;
  * @author Joseph Cloutier
  */
 class Layout {
+	/**
+	 * The primary Layout. You may set this to a Layout that you designed,
+	 * but once it's set, it can't be changed.
+	 */
+	public static var stageLayout(get, set):Layout;
+	private static var _stageLayout:Layout;
+	private static function get_stageLayout():Layout {
+		if(_stageLayout == null) {
+			_stageLayout = new Layout();
+		}
+		return _stageLayout;
+	}
+	private static function set_stageLayout(value:Layout):Layout {
+		if(_stageLayout == null) {
+			_stageLayout = value;
+		}
+		return _stageLayout;
+	}
+	
 	public var scale(default, null):Scale;
-	public var area(default, null):Area;
+	public var bounds(default, null):Area;
 	
 	private var instructions:Vector<BoundLayoutInstruction>;
 	
-	public function new(scale:Scale, ?area:Area) {
-		this.scale = scale;
-		
-		if(area == null) {
-			this.area = StageArea.instance;
+	public function new(?scale:Scale, ?bounds:Area) {
+		if(bounds == null) {
+			this.bounds = StageArea.instance;
 		} else {
-			this.area = area;
+			this.bounds = bounds;
 		}
 		
-		this.area.addEventListener(Event.CHANGE, onAreaChanged);
+		if(scale == null) {
+			this.scale = new Scale(Std.int(this.bounds.width), Std.int(this.bounds.height));
+		} else {
+			this.scale = scale;
+		}
+		
+		this.bounds.addEventListener(Event.CHANGE, onBoundsChanged);
 		
 		instructions = new Vector<BoundLayoutInstruction>();
 	}
 	
-	private function onAreaChanged(e:Event):Void {
+	private function onBoundsChanged(e:Event):Void {
 		apply();
 	}
 	
 	/**
 	 * Applies this layout, updating the position, size, etc. of each
-	 * tracked object.
-	 * Currently, commands are applied in the order they were registered.
-	 * In the future, sanity-checking may be performed, but for the
-	 * moment you should be sure to register everything in order.
+	 * tracked object. Updates are done in the order they were added, so
+	 * be sure to set size before setting position.
 	 */
 	public function apply():Void {
 		for(instruction in instructions) {
@@ -52,11 +74,9 @@ class Layout {
 	}
 	
 	public function dispose():Void {
-		area.removeEventListener(Event.CHANGE, onAreaChanged);
+		bounds.removeEventListener(Event.CHANGE, onBoundsChanged);
 		instructions = null;
 	}
-	
-	//Begin partition function(s).
 	
 	/**
 	 * Creates a new layout object within this one that's bounded in the
@@ -64,7 +84,7 @@ class Layout {
 	 */
 	public function partition(?leftEdge:DisplayObject, ?rightEdge:DisplayObject,
 					?topEdge:DisplayObject, ?bottomEdge:DisplayObject):Layout {
-		var subArea:BoundedArea = new BoundedArea(area,
+		var subArea:BoundedArea = new BoundedArea(bounds,
 							leftEdge, rightEdge, topEdge, bottomEdge);
 		//A BoundedArea serves as its own LayoutInstruction.
 		add(null, subArea);
@@ -72,46 +92,33 @@ class Layout {
 		return new Layout(scale, subArea);
 	}
 	
-	//Begin layout functions.
-	
-	/**
-	 * Places an object left of, right of, above, or below a "base"
-	 * object. Adjusts both axes. If you only want to adjust one, use
-	 * Align.adjacent().
-	 * @param	target The object to place.
-	 * @param	base The target will be placed relative to this object.
-	 * @param	direction The target will be placed in this direction
-	 * relative to the base.
-	 * @param	margin This much space will be left between the two objects.
-	 * @param	alignment How the target should be aligned with the base,
-	 * along whichever axis was not already set. Example: if direction is
-	 * LEFT, that controls the x coordinate, so this will set the
-	 * target's y coordinate.
-	 * 
-	 * If alignment is null, the target will be centered.
-	 */
-	public function adjacent(target:DisplayObject,
-							base:DisplayObject, direction:Direction,
-							margin:Float = 0, ?alignment:Align):Void {
-		add(target, Align.adjacent(margin, direction), base);
-		
-		if(alignment == null) {
-			alignment = Align.center(direction == UP || direction == DOWN);
-		}
-		add(target, alignment, base);
-	}
-	
 	/**
 	 * Adds a layout instruction, to be run when the stage is resized and
 	 * when apply() is called. If no "base" object is specified, the
 	 * entire layout area will be used as the base.
+	 * 
+	 * This clears any conflicting instructions.
 	 */
-	public inline function add(target:DisplayObject,
+	public function add(target:DisplayObject,
 						instruction:LayoutInstruction,
 						?base:DisplayObject):Void {
-		instructions.push(new BoundLayoutInstruction(target,
-						base != null ? base : area,
-						instruction));
+		var i:Int = instructions.length - 1;
+		while(i >= 0) {
+			if(instructions[i].target == target
+					&& InstructionMask.hasConflict(
+						instructions[i].instruction.mask,
+						instruction.mask)) {
+				instructions.splice(i, 1);
+			}
+			i--;
+		}
+		
+		var boundInstruction:BoundLayoutInstruction =
+			new BoundLayoutInstruction(target,
+						base != null ? base : bounds,
+						instruction);
+		instructions.push(boundInstruction);
+		boundInstruction.instruction.apply(boundInstruction.target, boundInstruction.area, scale);
 	}
 	
 	public inline function addMultiple(target:DisplayObject,
@@ -135,5 +142,11 @@ class BoundLayoutInstruction {
 		this.target = target;
 		this.area = area;
 		this.instruction = instruction;
+	}
+	
+	public static function sortOrder(a:BoundLayoutInstruction, b:BoundLayoutInstruction):Int {
+		//Conveniently, the mask bits are already in order. (Hopefully
+		//they'll stay that way...)
+		return a.instruction.mask - b.instruction.mask;
 	}
 }
