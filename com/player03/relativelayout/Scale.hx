@@ -3,8 +3,8 @@ package com.player03.relativelayout;
 import com.player03.relativelayout.area.Area;
 import com.player03.relativelayout.area.StageArea;
 import com.player03.relativelayout.Direction;
-import openfl.events.Event;
-import openfl.Lib;
+import flash.events.Event;
+import flash.Lib;
 
 /**
  * In the absence of other scale instructions, objects onscreen will be

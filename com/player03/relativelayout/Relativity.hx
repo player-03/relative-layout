@@ -2,7 +2,7 @@ package com.player03.relativelayout;
 
 import com.player03.relativelayout.instruction.Align;
 import com.player03.relativelayout.instruction.Size;
-import openfl.display.DisplayObject;
+import flash.display.DisplayObject;
 
 /**
  * A bunch of convenience functions. Name chosen to sound cool.

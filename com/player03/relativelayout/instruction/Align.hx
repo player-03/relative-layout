@@ -4,7 +4,7 @@ import com.player03.relativelayout.area.IRectangle;
 import com.player03.relativelayout.Direction;
 import com.player03.relativelayout.instruction.LayoutInstruction.InstructionMask;
 import com.player03.relativelayout.Scale;
-import openfl.display.DisplayObject;
+import flash.display.DisplayObject;
 
 using com.player03.relativelayout.Direction.DirectionUtils;
 

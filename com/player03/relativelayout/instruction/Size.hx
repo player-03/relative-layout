@@ -1,7 +1,8 @@
 package com.player03.relativelayout.instruction;
+
 import com.player03.relativelayout.area.IRectangle;
 import com.player03.relativelayout.instruction.LayoutInstruction.InstructionMask;
-import openfl.display.DisplayObject;
+import flash.display.DisplayObject;
 
 /**
  * Each Size value represents size along only one axis. You will have to use
